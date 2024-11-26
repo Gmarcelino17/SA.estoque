@@ -1,0 +1,223 @@
+import tkinter as tk
+from tkinter import messagebox
+from tkinter import ttk
+import mysql.connector
+
+# Conexão com o banco de dados
+def conectar_banco():
+    try:
+        conexao = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="root",
+            database="sa_estoque"
+        )
+        return conexao
+    except mysql.connector.Error as err:
+        messagebox.showerror("Erro no Banco de Dados", f"Erro: {err}")
+        return None
+
+# Função para autenticar o usuário (Login)
+def autenticar_usuario():
+    usuario = entry_usuario.get()
+    senha = entry_senha.get()
+    
+    if not usuario or not senha:
+        messagebox.showwarning("Campos vazios", "Por favor, preencha todos os campos!")
+        return
+
+    conexao = conectar_banco()
+    if conexao:
+        cursor = conexao.cursor()
+        sql = '''
+        SELECT id_usuario, nome, tipo 
+        FROM tb_usuarios 
+        WHERE usuario = %s AND senha = %s
+        '''
+        cursor.execute(sql, (usuario, senha))
+        resultado = cursor.fetchone()
+        if resultado:
+            id_usuario, nome, tipo = resultado
+            messagebox.showinfo("Login Bem-Sucedido", f"Bem-vindo(a), {nome}!")
+            if tipo == 'adm':
+                abrir_painel_adm()
+            elif tipo == 'funcionario':
+                abrir_painel_funcionario()
+        else:
+            messagebox.showerror("Erro de Login", "Usuário ou senha inválidos.")
+        cursor.close()
+        conexao.close()
+
+# Função para abrir o painel do administrador
+def abrir_painel_adm():
+    messagebox.showinfo("Administrador", "Abrindo painel do administrador...")
+
+# Função para abrir o painel do funcionário
+def abrir_painel_funcionario():
+    messagebox.showinfo("Funcionário", "Abrindo painel do funcionário...")
+
+# Função para cadastrar um novo usuário (Create)
+def cadastrar_usuario():
+    nome = entry_nome.get()
+    usuario = entry_usuario_cadastro.get()
+    cpf = entry_cpf.get()
+    nm_telefone = entry_telefone.get()
+    senha = entry_senha_cadastro.get()
+    tipo = tipo_var.get()
+    
+    if not nome or not usuario or not cpf or not nm_telefone or not senha:
+        messagebox.showwarning("Campos vazios", "Por favor, preencha todos os campos!")
+        return
+
+    conexao = conectar_banco()
+    if conexao:
+        cursor = conexao.cursor()
+        try:
+            sql = '''
+            INSERT INTO tb_usuarios (nome, usuario, cpf, nm_telefone, senha, tipo)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            '''
+            cursor.execute(sql, (nome, usuario, cpf, nm_telefone, senha, tipo))
+            conexao.commit()
+            messagebox.showinfo("Sucesso", "Usuário cadastrado com sucesso!")
+        except mysql.connector.Error as err:
+            messagebox.showerror("Erro no Banco de Dados", f"Erro: {err}")
+        cursor.close()
+        conexao.close()
+
+# Função para alterar a senha do usuário (Update)
+def alterar_senha():
+    usuario = entry_usuario.get()
+    nova_senha = entry_nova_senha.get()
+    
+    if not usuario or not nova_senha:
+        messagebox.showwarning("Campos vazios", "Por favor, preencha todos os campos!")
+        return
+
+    conexao = conectar_banco()
+    if conexao:
+        cursor = conexao.cursor()
+        try:
+            sql = '''
+            UPDATE tb_usuarios
+            SET senha = %s
+            WHERE usuario = %s
+            '''
+            cursor.execute(sql, (nova_senha, usuario))
+            conexao.commit()
+            if cursor.rowcount > 0:
+                messagebox.showinfo("Sucesso", "Senha alterada com sucesso!")
+            else:
+                messagebox.showerror("Erro", "Usuário não encontrado.")
+        except mysql.connector.Error as err:
+            messagebox.showerror("Erro no Banco de Dados", f"Erro: {err}")
+        cursor.close()
+        conexao.close()
+
+# Função para excluir um usuário (Delete)
+def excluir_usuario():
+    usuario = entry_usuario.get()
+    
+    if not usuario:
+        messagebox.showwarning("Campo vazio", "Por favor, insira o usuário a ser excluído!")
+        return
+
+    conexao = conectar_banco()
+    if conexao:
+        cursor = conexao.cursor()
+        try:
+            sql = '''
+            DELETE FROM tb_usuarios
+            WHERE usuario = %s
+            '''
+            cursor.execute(sql, (usuario,))
+            conexao.commit()
+            if cursor.rowcount > 0:
+                messagebox.showinfo("Sucesso", "Usuário excluído com sucesso!")
+            else:
+                messagebox.showerror("Erro", "Usuário não encontrado.")
+        except mysql.connector.Error as err:
+            messagebox.showerror("Erro no Banco de Dados", f"Erro: {err}")
+        cursor.close()
+        conexao.close()
+
+# Função para abrir a tela de cadastro
+def ir_para_cadastro():
+    abas.select(aba_cadastro)
+
+# Interface Gráfica com Tkinter
+janela = tk.Tk()
+janela.title("Login e Cadastro")
+janela.geometry("400x600")
+
+# Abas para alternar entre login e cadastro
+abas = ttk.Notebook(janela)
+
+# Aba de Login
+aba_login = tk.Frame(abas)
+abas.add(aba_login, text="Login")
+
+# Aba de Cadastro
+aba_cadastro = tk.Frame(abas)
+abas.add(aba_cadastro, text="Cadastro")
+
+abas.pack(expand=True, fill="both")
+
+# Widgets da Aba Login
+tk.Label(aba_login, text="Usuário:").pack(pady=5)
+entry_usuario = tk.Entry(aba_login)
+entry_usuario.pack(pady=5)
+
+tk.Label(aba_login, text="Senha:").pack(pady=5)
+entry_senha = tk.Entry(aba_login, show="*")
+entry_senha.pack(pady=5)
+
+botao_login = tk.Button(aba_login, text="Login", command=autenticar_usuario)
+botao_login.pack(pady=10)
+
+# Alterar senha
+tk.Label(aba_login, text="Nova Senha:").pack(pady=5)
+entry_nova_senha = tk.Entry(aba_login, show="*")
+entry_nova_senha.pack(pady=5)
+botao_alterar = tk.Button(aba_login, text="Alterar Senha", command=alterar_senha)
+botao_alterar.pack(pady=5)
+
+# Excluir usuário
+botao_excluir = tk.Button(aba_login, text="Excluir Usuário", command=excluir_usuario)
+botao_excluir.pack(pady=5)
+
+# Botão para ir para a tela de cadastro
+botao_ir_cadastro = tk.Button(aba_login, text="Ainda não tem cadastro? Cadastre-se!", command=ir_para_cadastro)
+botao_ir_cadastro.pack(pady=5)
+
+# Widgets da Aba Cadastro
+tk.Label(aba_cadastro, text="Nome:").pack(pady=5)
+entry_nome = tk.Entry(aba_cadastro)
+entry_nome.pack(pady=5)
+
+tk.Label(aba_cadastro, text="Usuário:").pack(pady=5)
+entry_usuario_cadastro = tk.Entry(aba_cadastro)
+entry_usuario_cadastro.pack(pady=5)
+
+tk.Label(aba_cadastro, text="CPF:").pack(pady=5)
+entry_cpf = tk.Entry(aba_cadastro)
+entry_cpf.pack(pady=5)
+
+tk.Label(aba_cadastro, text="Número de Telefone:").pack(pady=5)
+entry_telefone = tk.Entry(aba_cadastro)
+entry_telefone.pack(pady=5)
+
+tk.Label(aba_cadastro, text="Senha:").pack(pady=5)
+entry_senha_cadastro = tk.Entry(aba_cadastro, show="*")
+entry_senha_cadastro.pack(pady=5)
+
+tk.Label(aba_cadastro, text="Tipo:").pack(pady=5)
+tipo_var = tk.StringVar(value="funcionario")
+tk.Radiobutton(aba_cadastro, text="Administrador", variable=tipo_var, value="adm").pack()
+tk.Radiobutton(aba_cadastro, text="Funcionário", variable=tipo_var, value="funcionario").pack()
+
+botao_cadastrar = tk.Button(aba_cadastro, text="Cadastrar", command=cadastrar_usuario)
+botao_cadastrar.pack(pady=10)
+
+# Executar a aplicação
+janela.mainloop()
