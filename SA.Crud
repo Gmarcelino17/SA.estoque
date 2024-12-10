@@ -141,28 +141,4 @@ def adicionar_solicitacao(id_usuario_logado, tipo_tecido, quantidade):
     conn.commit()
     conn.close()
 
-def aprovar_solicitacao(id_solicitacao):
-    conn = conectar_banco()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE tb_solicitacao SET status='aprovado' WHERE id_solicitacao=%s", (id_solicitacao,))
-    conn.commit()
-    conn.close()
-
-def rejeitar_solicitacao(id_solicitacao):
-    conn = conectar_banco()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE tb_solicitacao SET status='rejeitado' WHERE id_solicitacao=%s", (id_solicitacao,))
-    conn.commit()
-    conn.close()
-
-def adicionar_observacao(id_solicitacao, observacao):
-    conn = conectar_banco()
-    cursor = conn.cursor()
-    query = "UPDATE tb_solicitacao SET observacao = %s WHERE id_solicitacao = %s"
-    cursor.execute(query, (observacao, id_solicitacao))
-    conn.commit()
-    conn.close()
-botao_voltar = tk.Button(aba_cadastro, text="Voltar para Login", command=ir_para_cadastro)
-botao_voltar.pack(pady=10)
-
 janela.mainloop()
